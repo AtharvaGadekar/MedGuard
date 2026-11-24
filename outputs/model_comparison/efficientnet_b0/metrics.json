@@ -1,0 +1,28 @@
+{
+  "dataset": "PathMNIST",
+  "model": "efficientnet_b0",
+  "selection_metric": "validation_macro_f1",
+  "best_validation_macro_f1": 0.7587131730711973,
+  "test_loss": 1.2150001399032253,
+  "test_accuracy": 0.6664345403899722,
+  "test_macro_f1": 0.6113621942420735,
+  "test_samples": 7180,
+  "class_names": [
+    "adipose",
+    "background",
+    "debris",
+    "lymphocytes",
+    "mucus",
+    "smooth muscle",
+    "normal colon mucosa",
+    "cancer-associated stroma",
+    "colorectal adenocarcinoma epithelium"
+  ],
+  "device": "mps",
+  "seed": 42,
+  "epochs_requested": 10,
+  "epochs_completed": 10,
+  "batch_size": 256,
+  "learning_rate": 0.001,
+  "torch_version": "2.15.0"
+}

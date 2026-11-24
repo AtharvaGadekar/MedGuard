@@ -1,0 +1,19 @@
+[project]
+name = "medguard"
+version = "0.1.0"
+description = "Research prototype for uncertainty-aware PathMNIST classification"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "torch>=2.6",
+  "torchvision>=0.21",
+  "medmnist>=3.0",
+  "numpy>=2.0",
+  "pillow>=11.0",
+  "matplotlib>=3.10",
+  "scikit-learn>=1.6",
+  "tqdm>=4.67",
+  "streamlit>=1.67.0",
+]
+
+[tool.uv]
+package = false

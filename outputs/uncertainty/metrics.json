@@ -1,0 +1,36 @@
+{
+  "method": "maximum softmax probability confidence threshold",
+  "confidence_definition": "max(softmax(logits))",
+  "uncertainty_definition": "1 - max(softmax(logits))",
+  "threshold_selection": "validation confidence quantile; labels are not used to choose threshold",
+  "target_validation_coverage": 0.8,
+  "checkpoint": "outputs/baseline/best_model.pt",
+  "device": "mps",
+  "validation": {
+    "sample_count": 10004,
+    "coverage": 0.8000799680127949,
+    "accepted_count": 8004,
+    "review_count": 2000,
+    "overall_accuracy": 0.8443622550979608,
+    "selective_accuracy": 0.9245377311344328,
+    "selective_risk": 0.07546226886556717,
+    "errors_flagged_for_review_recall": 0.6120745022479126,
+    "confidence_threshold": 0.6024348735809326,
+    "uncertainty_threshold": 0.3975651264190674
+  },
+  "test": {
+    "sample_count": 7180,
+    "coverage": 0.8201949860724234,
+    "accepted_count": 5889,
+    "review_count": 1291,
+    "overall_accuracy": 0.8260445682451254,
+    "selective_accuracy": 0.8967566649685855,
+    "selective_risk": 0.10324333503141447,
+    "errors_flagged_for_review_recall": 0.5132105684547638,
+    "confidence_threshold": 0.6024348735809326,
+    "uncertainty_threshold": 0.3975651264190674
+  },
+  "full_coverage_test_accuracy": 0.8260445682451254,
+  "risk_coverage_operating_points": 17,
+  "limitation": "Softmax confidence is a simple uncertainty proxy and is not guaranteed to be calibrated."
+}
