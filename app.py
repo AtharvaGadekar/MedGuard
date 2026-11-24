@@ -98,11 +98,24 @@ def predict(image_tensor: torch.Tensor, model: SmallCNN, device: torch.device) -
     return class_id, float(probabilities[class_id]), probabilities
 
 
-def show_result(title: str, class_id: int, confidence: float, threshold: float) -> None:
+def show_result(
+    title: str,
+    class_id: int,
+    confidence: float,
+    probabilities: np.ndarray,
+    reference_class_id: int,
+    threshold: float,
+) -> None:
+    reference_class = CLASS_NAMES[reference_class_id]
     st.markdown(f"#### {title}")
     st.caption("Predicted class")
     st.markdown(f"**{CLASS_NAMES[class_id]}**")
-    st.metric("Model confidence", f"{confidence:.1%}")
+    if class_id == reference_class_id:
+        st.success(f"Correct for this labeled example · reference: {reference_class}")
+    else:
+        st.error(f"Misclassified · reference: {reference_class}")
+    st.metric("Top-prediction confidence", f"{confidence:.1%}")
+    st.caption(f"Probability assigned to the reference class ({reference_class}): {probabilities[reference_class_id]:.1%}")
     if confidence >= threshold:
         st.success("Accepted by the review threshold")
     else:
@@ -142,7 +155,8 @@ with st.container(border=True):
     )
     sample_index = sample_indices[selected_option]
     input_image = normalize_image(Image.fromarray(np.asarray(test_dataset.imgs[sample_index])))
-    dataset_label = sample_class
+    dataset_label_id = int(np.asarray(test_dataset.labels[sample_index]).reshape(-1)[0])
+    dataset_label = CLASS_NAMES[dataset_label_id]
     source_description = f"PathMNIST test example · dataset label: {dataset_label}"
 
     prepared_image = input_image.resize((28, 28), Image.Resampling.LANCZOS)
@@ -171,7 +185,9 @@ with st.container(border=True):
 
         if blur_severity == 0:
             st.image(prepared_image, caption="Model input · 28 × 28", width=220)
-            show_result("Prediction", clean_class, clean_confidence, confidence_threshold)
+            show_result(
+                "Prediction", clean_class, clean_confidence, clean_probabilities, dataset_label_id, confidence_threshold
+            )
             probabilities = clean_probabilities
         else:
             corruption = "defocus" if blur_type == "Defocus-style" else "motion"
@@ -181,21 +197,28 @@ with st.container(border=True):
             result_original, result_blurred = st.columns(2, gap="medium")
             with result_original:
                 st.image(prepared_image, caption="Original model input", width=220)
-                show_result("Original", clean_class, clean_confidence, confidence_threshold)
+                show_result(
+                    "Original", clean_class, clean_confidence, clean_probabilities, dataset_label_id, confidence_threshold
+                )
             with result_blurred:
                 st.image(blurred_image, caption=f"{blur_type} · level {blur_severity}", width=220)
                 blur_class, blur_confidence, probabilities = predict(blurred_tensor, model, device)
-                show_result("Under stress", blur_class, blur_confidence, confidence_threshold)
+                show_result(
+                    "Under stress", blur_class, blur_confidence, probabilities, dataset_label_id, confidence_threshold
+                )
 
     st.markdown("---")
-    st.markdown("#### Class probability profile")
+    st.markdown("#### Per-class confidence for this image")
     st.bar_chart(
         {CLASS_NAMES[index]: float(probabilities[index]) for index in range(9)},
         horizontal=True,
         x_label="Probability",
         y_label="Tissue class",
     )
-    st.caption("Built-in examples come from the held-out test split; their labels are shown only for comparison and are never used by the model.")
+    st.caption(
+        "Each bar is the probability for one class on the image currently shown above; the highest bar is the top-prediction confidence. "
+        "The reference label is used only for this correctness check and is never given to the model."
+    )
 
 
 st.markdown("---")
