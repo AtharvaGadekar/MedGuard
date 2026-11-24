@@ -89,4 +89,4 @@ Launch the local Streamlit interface after the baseline and threshold evaluation
 .venv/bin/streamlit run app.py
 ```
 
-The demo uses built-in PathMNIST test examples only. It reports the SmallCNN class prediction, confidence-based review recommendation, and class-probability profile. The blur controls compare the original patch with a synthetic defocus or motion blur. There is no image-upload control. This is a research demonstration, not a clinical tool.
+The demo uses built-in PathMNIST test examples only. It reports the SmallCNN class prediction, confidence-based review recommendation, and class-probability profile. The blur controls compare the original patch with a synthetic defocus or motion blur. An aggregate stress-test panel also shows the severe-defocus test-set failure separately from the selected image prediction. There is no image-upload control. This is a research demonstration, not a clinical tool.

@@ -17,6 +17,7 @@ from scripts.train_baseline import DATA_ROOT, PROJECT_ROOT, SmallCNN
 
 CHECKPOINT_PATH = PROJECT_ROOT / "outputs" / "baseline" / "best_model.pt"
 UNCERTAINTY_METRICS_PATH = PROJECT_ROOT / "outputs" / "uncertainty" / "metrics.json"
+ROBUSTNESS_METRICS_PATH = PROJECT_ROOT / "outputs" / "robustness" / "metrics.json"
 CLASS_NAMES = [INFO["pathmnist"]["label"][str(index)] for index in range(9)]
 TO_TENSOR = transforms.ToTensor()
 
@@ -72,6 +73,13 @@ def load_test_samples() -> tuple[PathMNIST, dict[str, list[int]]]:
     labels = np.asarray(dataset.labels).reshape(-1).astype(int)
     by_class = {CLASS_NAMES[class_id]: np.flatnonzero(labels == class_id).tolist() for class_id in range(9)}
     return dataset, by_class
+
+
+@st.cache_data
+def load_robustness_metrics() -> dict[str, object]:
+    if not ROBUSTNESS_METRICS_PATH.is_file():
+        raise FileNotFoundError("Aggregate blur results are missing. Run scripts/evaluate_blur_robustness.py first.")
+    return json.loads(ROBUSTNESS_METRICS_PATH.read_text())
 
 
 def normalize_image(image: Image.Image) -> Image.Image:
@@ -188,3 +196,51 @@ with st.container(border=True):
         y_label="Tissue class",
     )
     st.caption("Built-in examples come from the held-out test split; their labels are shown only for comparison and are never used by the model.")
+
+
+st.markdown("---")
+st.markdown("### Aggregate stress-test finding")
+st.caption("These are held-out test-set results, separate from the individual example shown above.")
+
+try:
+    robustness_metrics = load_robustness_metrics()
+    severe_defocus = next(
+        result
+        for result in robustness_metrics["results"]
+        if result["model"] == "smallcnn" and result["corruption"] == "defocus" and result["severity"] == 5
+    )
+except (FileNotFoundError, KeyError, StopIteration, TypeError) as error:
+    st.info(f"Aggregate stress-test results are unavailable: {error}")
+else:
+    accuracy_col, coverage_col, review_col = st.columns(3)
+    accuracy_col.metric("Severe-defocus accuracy", f"{severe_defocus['accuracy']:.1%}")
+    coverage_col.metric("Predictions still accepted", f"{severe_defocus['coverage']:.1%}")
+    review_delta_pp = 100 * (
+        severe_defocus["errors_flagged_recall"] - severe_defocus["random_review_expected_error_recall"]
+    )
+    review_col.metric(
+        "Errors flagged for review",
+        f"{severe_defocus['errors_flagged_recall']:.1%}",
+        delta=f"{review_delta_pp:+.1f} pp vs random",
+    )
+
+    st.error(
+        "Under severe synthetic defocus, SmallCNN was correct on only about one in five test images, "
+        "yet the fixed confidence threshold still accepted about 95% of them. Error review was slightly "
+        "below the matched-rate random-review reference."
+    )
+    threshold = severe_defocus["confidence_threshold"]
+    kernel_size = severe_defocus["kernel_size"]
+    samples = severe_defocus["samples"]
+    st.caption(
+        f"Across {samples:,} held-out test images · {kernel_size}×{kernel_size} synthetic defocus kernel "
+        f"on native 28×28 patches · confidence threshold {threshold:.3f}, selected on clean validation "
+        "for 80% target coverage and kept fixed for this test."
+    )
+    with st.expander("How to read these metrics"):
+        st.markdown(
+            "- **Accuracy:** fraction of all test images classified correctly.\n"
+            "- **Predictions still accepted:** fraction whose confidence met the validation-selected threshold.\n"
+            "- **Errors flagged for review:** fraction of wrong predictions routed for review; the comparison "
+            "is with random review at the same review rate."
+        )
